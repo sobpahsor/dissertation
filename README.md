@@ -1,3 +1,0 @@
-# DataMiningCourseWork
-DataMiningCourseWork
-~
