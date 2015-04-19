@@ -1,0 +1,76 @@
+
+#第一个是lda和自选feature结合，第二个是lda，第三个是处理过的reuters
+featureSelected <- read.csv("F:/R_WorkingSpace/courseWork/DataCombine.csv")
+ldafeature <- read.csv("F:/R_WorkingSpace/courseWork/LDA_Feature.csv")
+reutersDeleteRows <- read.csv("F:/R_WorkingSpace/courseWork/reutersDeleteRows.csv")
+
+#选取题目中提到的十个高频属性
+ten.col<-c("topic.earn", "topic.acq", 
+           "topic.money.fx", "topic.grain", 
+           "topic.crude", "topic.trade", 
+           "topic.interest", "topic.ship", 
+           "topic.wheat", "topic.corn")
+
+#取出这十列的列数
+no.column<-c()
+for(heihei in 1:10){
+  no.column<-c(no.column, which(colnames(reutersDeleteRows) == ten.col[heihei]))
+}
+
+#将这十列与之前feature selection选出的属性连接起来
+
+#下面的两条代码只需要运行一条，每次得到的是不同的数据集
+the.data<-cbind(reutersDeleteRows[,c(3,no.column)],ldafeature)
+the.data<-cbind(reutersDeleteRows[,c(3,no.column)],featureSelected)
+#将数据展开
+the.data[,"class"]<-0
+ClassCol<-ncol(the.data)
+for(i in 1:10369){
+  if(sum(the.data[i,2:11]) > 1){
+    for(j in 2:11){
+      if(the.data[i,j] == 1){
+          newRow<-the.data[i,]
+          newRow[,2:11]<-0
+          newRow[ClassCol]<-colnames(the.data)[j]
+          the.data<-rbind(the.data,newRow)
+      }  
+    }
+  } 
+  if(sum(the.data[i,2:11]) == 1){
+      the.data[i,ClassCol]<-colnames(the.data)[which(the.data[i,1:11] == 1)]
+    }
+  print(i)
+}
+
+selected.df<-the.data[-which(the.data[,ClassCol] == 0),]
+selected.df<-selected.df[-which(selected.df[,1] == "not-used"),]
+
+
+factor.data<-selected.df
+for(j in 1:length(the.data)){
+  factor.data[,j]<-as.factor(selected.df[,j])
+}
+
+trainData<-factor.data[which(selected.df$purpose == "train"),]
+testData<-factor.data[which(selected.df$purpose == "test"),]
+
+library("e1071")
+library("randomForest")
+
+model.nb<-naiveBayes(class ~ ., data = trainData[,c(12:ClassCol)])
+predict.nb<-predict(model.nb, newdata = testData[,12:(ClassCol-1)])
+table.nb<-table(predict.nb, testData[,ClassCol])
+
+model.svm<-svm(class ~ ., data = trainData[,c(12:ClassCol)])
+predict.svm<-predict(model.svm, newdata = testData[,12:(ClassCol-1)])
+table.svm<-table(predict.svm, testData[,ClassCol])
+
+model.rf<-randomForest(class ~ ., data = trainData[,c(12:ClassCol)])
+predict.rf<-predict(model.rf, newdata = testData[,12:(ClassCol-1)])
+table.rf<-table(predict.rf, testData[,ClassCol])
+
+
+
+
+
+
