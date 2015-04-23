@@ -1,4 +1,5 @@
 
+
 #第一个是lda和自选feature结合，第二个是lda，第三个是处理过的reuters
 featureSelected <- read.csv("F:/R_WorkingSpace/courseWork/DataCombine.csv")
 ldafeature <- read.csv("F:/R_WorkingSpace/courseWork/LDA_Feature.csv")
@@ -45,7 +46,6 @@ for(i in 1:10369){
 selected.df<-the.data[-which(the.data[,ClassCol] == 0),]
 selected.df<-selected.df[-which(selected.df[,1] == "not-used"),]
 
-
 factor.data<-selected.df
 for(j in 1:length(the.data)){
   factor.data[,j]<-as.factor(selected.df[,j])
@@ -56,21 +56,377 @@ testData<-factor.data[which(selected.df$purpose == "test"),]
 
 library("e1071")
 library("randomForest")
+#Predict using train data
 
+precision.train<-as.data.frame(matrix(0,10,3))
+recall.train<-as.data.frame(matrix(0,10,3))
+Fmeasure.train<-as.data.frame(matrix(0,10,3))
+accuracy.train<-as.data.frame(matrix(0,1,3))
+macro.micro.train<-as.data.frame(matrix(0,4,3))
+rownames(precision.train)<-ten.col
+rownames(recall.train)<-ten.col
+rownames(Fmeasure.train)<-ten.col
+rownames(accuracy.train)<-"accuracy"
+rownames(macro.micro.train)<-c("macro.precision", "macro.recall", "micro.precision", "micro.recall")
+colnames(precision.train)<-c("NaiveBayes","SVM","RandomForest")
+colnames(recall.train)<-c("NaiveBayes","SVM","RandomForest")
+colnames(Fmeasure.train)<-c("NaiveBayes","SVM","RandomForest")
+colnames(accuracy.train)<-c("NaiveBayes","SVM","RandomForest")
+colnames(macro.micro.train)<-c("NaiveBayes","SVM","RandomForest")
+
+
+model.nb.train<-naiveBayes(class ~ ., data = trainData[,c(12:ClassCol)])
+predict.nb.train<-predict(model.nb.train, newdata = trainData[,12:(ClassCol-1)])
+table.nb.train<-table(trainData[,ClassCol], predict.nb.train)
+
+model.svm.train<-svm(class ~ ., data = trainData[,c(12:ClassCol)])
+predict.svm.train<-predict(model.svm.train, newdata = trainData[,12:(ClassCol-1)])
+table.svm.train<-table(trainData[,ClassCol], predict.svm.train)
+
+model.rf.train<-randomForest(class ~ ., data = trainData[,c(12:ClassCol)])
+predict.rf.train<-predict(model.rf.train, newdata = trainData[,12:(ClassCol-1)])
+table.rf.train<-table(trainData[,ClassCol], predict.rf.train)
+
+TP.overall.train<-0
+FN.overall.train<-0
+FP.overall.train<-0
+for(i in 1:10){
+  TP<-table.nb.train[i,i]
+  FN<-sum(table.nb.train[,i])-TP
+  FP<-sum(table.nb.train[i,])-TP
+  precision.train[i,1]<-TP/(TP+FN)
+  recall.train[i,1]<-TP/(TP+FP)
+  Fmeasure.train[i,1]<-2*precision.train[i,1]*recall.train[i,1]/(precision.train[i,1]+recall.train[i,1])
+  TP.overall.train<-TP.overall.train+TP
+  FN.overall.train<-FN.overall.train+FN
+  FP.overall.train<-FP.overall.train+FP
+}
+accuracy.train[1,1]<-TP.overall.train/6587
+macro.micro.train[1,1]<-sum(precision.train[,3],na.rm = T)/10
+macro.micro.train[2,1]<-sum(recall.train[,3],na.ram = T)/10
+macro.micro.train[3,1]<-TP.overall.train/(TP.overall.train+FP.overall.train)
+macro.micro.train[4,1]<-TP.overall.train/(TP.overall.train+FN.overall.train)
+
+TP.overall.train<-0
+FN.overall.train<-0
+FP.overall.train<-0
+for(i in 1:10){
+  TP<-table.svm.train[i,i]
+  FN<-sum(table.svm.train[,i])-TP
+  FP<-sum(table.svm.train[i,])-TP
+  precision.train[i,2]<-TP/(TP+FN)
+  recall.train[i,2]<-TP/(TP+FP)
+  Fmeasure.train[i,2]<-2*precision.train[i,2]*recall.train[i,2]/(precision.train[i,2]+recall.train[i,2])
+  TP.overall.train<-TP.overall.train+TP
+  FN.overall.train<-FN.overall.train+FN
+  FP.overall.train<-FP.overall.train+FP
+}
+accuracy.train[1,2]<-TP.overall.train/6587
+macro.micro.train[1,2]<-sum(precision.train[,3],na.rm = T)/10
+macro.micro.train[2,2]<-sum(recall.train[,3],na.ram = T)/10
+macro.micro.train[3,2]<-TP.overall.train/(TP.overall.train+FP.overall.train)
+macro.micro.train[4,2]<-TP.overall.train/(TP.overall.train+FN.overall.train)
+
+TP.overall.train<-0
+FN.overall.train<-0
+FP.overall.train<-0
+for(i in 1:10){
+  TP<-table.rf.train[i,i]
+  FN<-sum(table.rf.train[,i])-TP
+  FP<-sum(table.rf.train[i,])-TP
+  precision.train[i,3]<-TP/(TP+FN)
+  recall.train[i,3]<-TP/(TP+FP)
+  Fmeasure.train[i,3]<-2*precision.train[i,3]*recall.train[i,3]/(precision.train[i,3]+recall.train[i,3])
+  TP.overall.train<-TP.overall.train+TP
+  FN.overall.train<-FN.overall.train+FN
+  FP.overall.train<-FP.overall.train+FP
+}
+accuracy.train[1,3]<-TP.overall.train/6587
+macro.micro.train[1,3]<-sum(precision.train[,3],na.rm = T)/10
+macro.micro.train[2,3]<-sum(recall.train[,3],na.ram = T)/10
+macro.micro.train[3,3]<-TP.overall.train/(TP.overall.train+FP.overall.train)
+macro.micro.train[4,3]<-TP.overall.train/(TP.overall.train+FN.overall.train)
+
+#Predict using test data.
 model.nb<-naiveBayes(class ~ ., data = trainData[,c(12:ClassCol)])
 predict.nb<-predict(model.nb, newdata = testData[,12:(ClassCol-1)])
-table.nb<-table(predict.nb, testData[,ClassCol])
+table.nb<-table(testData[,ClassCol], predict.nb)
 
 model.svm<-svm(class ~ ., data = trainData[,c(12:ClassCol)])
 predict.svm<-predict(model.svm, newdata = testData[,12:(ClassCol-1)])
-table.svm<-table(predict.svm, testData[,ClassCol])
+table.svm<-table(testData[,ClassCol], predict.svm)
 
 model.rf<-randomForest(class ~ ., data = trainData[,c(12:ClassCol)])
 predict.rf<-predict(model.rf, newdata = testData[,12:(ClassCol-1)])
-table.rf<-table(predict.rf, testData[,ClassCol])
+table.rf<-table(testData[,ClassCol], predict.rf)
+
+precision<-as.data.frame(matrix(0,10,3))
+recall<-as.data.frame(matrix(0,10,3))
+Fmeasure<-as.data.frame(matrix(0,10,3))
+accuracy<-as.data.frame(matrix(0,1,3))
+macro.micro<-as.data.frame(matrix(0,4,3))
+rownames(precision)<-ten.col
+rownames(recall)<-ten.col
+rownames(Fmeasure)<-ten.col
+rownames(accuracy)<-"accuracy"
+rownames(macro.micro)<-c("macro.precision", "macro.recall", "micro.precision", "micro.recall")
+colnames(precision)<-c("NaiveBayes","SVM","RandomForest")
+colnames(recall)<-c("NaiveBayes","SVM","RandomForest")
+colnames(Fmeasure)<-c("NaiveBayes","SVM","RandomForest")
+colnames(accuracy)<-c("NaiveBayes","SVM","RandomForest")
+colnames(macro.micro)<-c("NaiveBayes","SVM","RandomForest")
+
+TP.overall<-0
+FN.overall<-0
+FP.overall<-0
+for(i in 1:10){
+  TP<-table.nb[i,i]
+  FN<-sum(table.nb[,i])-TP
+  FP<-sum(table.nb[i,])-TP
+  precision[i,1]<-TP/(TP+FN)
+  recall[i,1]<-TP/(TP+FP)
+  Fmeasure[i,1]<-2*precision[i,1]*recall[i,1]/(precision[i,1]+recall[i,1])
+  TP.overall<-TP.overall+TP
+  FN.overall<-FN.overall+FN
+  FP.overall<-FP.overall+FP
+}
+#2547 is the number of instances in the 
+accuracy[1,1]<-TP.overall/2547
+macro.micro[1,1]<-sum(precision[,1],na.rm = T)/10
+macro.micro[2,1]<-sum(recall[,1],na.ram = T)/10
+macro.micro[3,1]<-TP.overall/(TP.overall+FP.overall)
+macro.micro[4,1]<-TP.overall/(TP.overall+FN.overall)
+
+TP.overall<-0
+FN.overall<-0
+FP.overall<-0
+for(i in 1:10){
+  TP<-table.svm[i,i]
+  FN<-sum(table.svm[,i])-TP
+  FP<-sum(table.svm[i,])-TP
+  precision[i,2]<-TP/(TP+FN)
+  recall[i,2]<-TP/(TP+FP)
+  Fmeasure[i,2]<-2*precision[i,2]*recall[i,2]/(precision[i,2]+recall[i,2])
+  TP.overall<-TP.overall+TP
+  FN.overall<-FN.overall+FN
+  FP.overall<-FP.overall+FP
+}
+accuracy[1,2]<-TP.overall/2547
+macro.micro[1,2]<-sum(precision[,2],na.rm = T)/10
+macro.micro[2,2]<-sum(recall[,2],na.ram = T)/10
+macro.micro[3,2]<-TP.overall/(TP.overall+FP.overall)
+macro.micro[4,2]<-TP.overall/(TP.overall+FN.overall)
+
+TP.overall<-0
+FN.overall<-0
+FP.overall<-0
+for(i in 1:10){
+  TP<-table.rf[i,i]
+  FN<-sum(table.rf[,i])-TP
+  FP<-sum(table.rf[i,])-TP
+  precision[i,3]<-TP/(TP+FN)
+  recall[i,3]<-TP/(TP+FP)
+  Fmeasure[i,3]<-2*precision[i,3]*recall[i,3]/(precision[i,3]+recall[i,3])
+  TP.overall<-TP.overall+TP
+  FN.overall<-FN.overall+FN
+  FP.overall<-FP.overall+FP
+}
+accuracy[1,3]<-TP.overall/2547
+macro.micro[1,3]<-sum(precision[,3],na.rm = T)/10
+macro.micro[2,3]<-sum(recall[,3],na.ram = T)/10
+macro.micro[3,3]<-TP.overall/(TP.overall+FP.overall)
+macro.micro[4,3]<-TP.overall/(TP.overall+FN.overall)
+
+#======================================================================
+# 10 fold cross validation
+#======================================================================
+  
+  tenData<-factor.data[,-(1:11)]
+ 
+  tenfold<-c("acq","corn","crude","earn","grain","interest","money","ship","trade","wheat")
+  
+  precision.rf<-as.data.frame(matrix(0,10,10))
+  recall.rf<-as.data.frame(matrix(0,10,10))
+  fmeasure.rf<-as.data.frame(matrix(0,10,10))
+  tp.rf<-as.data.frame(matrix(0,10,10))
+  fn.rf<-as.data.frame(matrix(0,10,10))
+  fp.rf<-as.data.frame(matrix(0,10,10))
+  colnames(precision.rf)<-tenfold
+  colnames(recall.rf)<-tenfold
+  colnames(fmeasure.rf)<-tenfold
+  colnames(tp.rf)<-tenfold
+  colnames(fn.rf)<-tenfold
+  colnames(fp.rf)<-tenfold
+  
+  #Random Forest  
+    for(i in 1:10){
+      leftBoundary<-913*(i-1)+1
+      if(i != 10) {
+        rightBoundary<-913*i
+      } else {rightBoundary<-9134}
+      ranforest<-randomForest(class~ ., data = tenData[-leftBoundary:-rightBoundary,])
+      preResult1<-predict(ranforest,tenData[leftBoundary:rightBoundary,])
+      tbrf<-table(observed = tenData[leftBoundary:rightBoundary,"class"], predicted = preResult1)
+      #calculate the recall Precision and F-measure value according to the fussion matrix
+      for(j in 1:10){
+        TPrf<-tbrf[j,j]
+        FPrf<-sum(tbrf[,j]) - TPrf
+        FNrf<-sum(tbrf[j,]) - TPrf
+        
+        precision.rf[i,j]<-TPrf/(TPrf+FPrf)
+        recall.rf[i,j]<-TPrf/(TPrf+FNrf)
+        fmeasure.rf[i,j]<-2*precision.rf[i,j]*recall.rf[i,j]/(precision.rf[i,j]+recall.rf[i,j])
+        
+        tp.rf[i,j]<-TPrf
+        fn.rf[i,j]<-FPrf
+        fp.rf[i,j]<-FNrf
+      }
+      print(i)
+    }
+
+  AM.rf<-as.data.frame(matrix(0,10,5))
+  colnames(AM.rf)<-c("acc","Pmacro","Rmacro","Pmicro","Rmicro")
+  
+  for( k in 1:10){
+    if(k != 10){
+      AM.rf[k,1]<-sum(tp.rf[k,])/913
+      AM.rf[k,2]<-sum(precision.rf[k,], na.rm = T)/10
+      AM.rf[k,3]<-sum(recall.rf[k,],na.rm = T)/10
+      AM.rf[k,4]<-sum(tp.rf[k,])/(sum(tp.rf[k,])+sum(fp.rf[k,]))
+      AM.rf[k,5]<-sum(tp.rf[k,])/(sum(tp.rf[k,])+sum(fn.rf[k,]))
+    } else {
+      AM.rf[k,1]<-sum(tp.rf[k,])/917
+      AM.rf[k,2]<-sum(precision.rf[k,], na.rm = T)/10
+      AM.rf[k,3]<-sum(recall.rf[k,],na.rm = T)/10
+      AM.rf[k,4]<-sum(tp.rf[k,])/(sum(tp.rf[k,])+sum(fp.rf[k,]))
+      AM.rf[k,5]<-sum(tp.rf[k,])/(sum(tp.rf[k,])+sum(fn.rf[k,]))
+    }
+  }
+
+sum(AM.rf[,1])/10
+
+  
+  #Naive Bayes
+  
+  precision.nb<-as.data.frame(matrix(0,10,10))
+  recall.nb<-as.data.frame(matrix(0,10,10))
+  fmeasure.nb<-as.data.frame(matrix(0,10,10))
+  tp.nb<-as.data.frame(matrix(0,10,10))
+  fn.nb<-as.data.frame(matrix(0,10,10))
+  fp.nb<-as.data.frame(matrix(0,10,10))
+  colnames(precision.nb)<-tenfold
+  colnames(recall.nb)<-tenfold
+  colnames(fmeasure.nb)<-tenfold
+  colnames(tp.nb)<-tenfold
+  colnames(fn.nb)<-tenfold
+  colnames(fp.nb)<-tenfold
 
 
+      for(i in 1:10){
+        leftBoundary<-913*(i-1)+1
+        if(i != 10) {
+          rightBoundary<-913*i
+        } else {rightBoundary<-9134}
+        NB<-naiveBayes(class~ ., data = tenData[-leftBoundary:-rightBoundary,])
+        preResult2<-predict(NB,tenData[leftBoundary:rightBoundary,])
+        tbnb<-table(observed = tenData[leftBoundary:rightBoundary,"class"], predicted = preResult2)
+        #calculate the recall Precision and F-measure value according to the fussion matrix
+        for(j in 1:10){
+          TPnb<-tbnb[j,j]
+          FPnb<-sum(tbnb[,j]) - TPnb
+          FNnb<-sum(tbnb[j,]) - TPnb
+          
+          precision.nb[i,j]<-TPnb/(TPnb+FPnb)
+          recall.nb[i,j]<-TPnb/(TPnb+FNnb)
+          fmeasure.nb[i,j]<-2*precision.nb[i,j]*recall.nb[i,j]/(precision.nb[i,j]+recall.nb[i,j])
+          
+          tp.nb[i,j]<-TPnb
+          fn.nb[i,j]<-FNnb
+          fp.nb[i,j]<-FPnb
+        }
+        print(i)
+      }
 
+AM.nb<-as.data.frame(matrix(0,10,5))
+colnames(AM.nb)<-c("acc.nb","Pmacro.nb","Rmacro.nb","Pmicro.nb","Rmicro.nb")
 
+for( k in 1:10){
+  if(k != 10){
+    AM.nb[k,1]<-sum(tp.nb[k,])/913
+    AM.nb[k,2]<-sum(precision.nb[k,], na.rm = T)/10
+    AM.nb[k,3]<-sum(recall.nb[k,],na.rm = T)/10
+    AM.nb[k,4]<-sum(tp.nb[k,])/(sum(tp.nb[k,])+sum(fp.nb[k,]))
+    AM.nb[k,5]<-sum(tp.nb[k,])/(sum(tp.nb[k,])+sum(fn.nb[k,]))
+  } else {
+    AM.nb[k,1]<-sum(tp.nb[k,])/917
+    AM.nb[k,2]<-sum(precision.nb[k,], na.rm = T)/10
+    AM.nb[k,3]<-sum(recall.nb[k,],na.rm = T)/10
+    AM.nb[k,4]<-sum(tp.nb[k,])/(sum(tp.nb[k,])+sum(fp.nb[k,]))
+    AM.nb[k,5]<-sum(tp.nb[k,])/(sum(tp.nb[k,])+sum(fn.nb[k,]))
+  }
+}
 
+sum(AM.nb[,1])/10
+  
+  #SVM
 
+  precision.svm<-as.data.frame(matrix(0,10,10))
+  recall.svm<-as.data.frame(matrix(0,10,10))
+  fmeasure.svm<-as.data.frame(matrix(0,10,10))
+  tp.svm<-as.data.frame(matrix(0,10,10))
+  fn.svm<-as.data.frame(matrix(0,10,10))
+  fp.svm<-as.data.frame(matrix(0,10,10))
+  colnames(precision.svm)<-tenfold
+  colnames(recall.svm)<-tenfold
+  colnames(fmeasure.svm)<-tenfold
+  colnames(tp.svm)<-tenfold
+  colnames(fn.svm)<-tenfold
+  colnames(fp.svm)<-tenfold
+    
+  for(i in 1:10){
+    leftBoundary<-913*(i-1)+1
+    if(i != 10) {
+      rightBoundary<-913*i
+    } else {rightBoundary<-9134}
+    SVM<-svm(class~ ., data = tenData[-leftBoundary:-rightBoundary,])
+    preResult3<-predict(SVM,tenData[leftBoundary:rightBoundary,])
+    tbsvm<-table(observed = tenData[leftBoundary:rightBoundary,"class"], predicted = preResult3)
+    #calculate the recall Precision and F-measure value according to the fussion matrix
+    for(j in 1:10){
+      TPsvm<-tbsvm[j,j]
+      FPsvm<-sum(tbsvm[,j]) - TPsvm
+      FNsvm<-sum(tbsvm[j,]) - TPsvm
+      
+      precision.svm[i,j]<-TPsvm/(TPsvm+FPsvm)
+      recall.svm[i,j]<-TPsvm/(TPsvm+FNsvm)
+      fmeasure.svm[i,j]<-2*precision.svm[i,j]*recall.svm[i,j]/(precision.svm[i,j]+recall.svm[i,j])
+      
+      tp.svm[i,j]<-TPsvm
+      fp.svm[i,j]<-FPsvm
+      fn.svm[i,j]<-FNsvm
+    }
+    print(i)
+  }
+
+  AM.svm<-as.data.frame(matrix(0,10,5))
+  colnames(AM.svm)<-c("acc","Pmacro","Rmacro","Pmicro","Rmicro")
+  
+  for( k in 1:10){
+    if(k != 10){
+      AM.svm[k,1]<-sum(tp.svm[k,])/913
+      AM.svm[k,2]<-sum(precision.svm[k,], na.rm = T)/10
+      AM.svm[k,3]<-sum(recall.svm[k,],na.rm = T)/10
+      AM.svm[k,4]<-sum(tp.svm[k,])/(sum(tp.svm[k,])+sum(fp.svm[k,]))
+      AM.svm[k,5]<-sum(tp.svm[k,])/(sum(tp.svm[k,])+sum(fn.svm[k,]))
+    } else {
+      AM.svm[k,1]<-sum(tp.svm[k,])/917
+      AM.svm[k,2]<-sum(precision.svm[k,], na.rm = T)/10
+      AM.svm[k,3]<-sum(recall.svm[k,],na.rm = T)/10
+      AM.svm[k,4]<-sum(tp.svm[k,])/(sum(tp.svm[k,])+sum(fp.svm[k,]))
+      AM.svm[k,5]<-sum(tp.svm[k,])/(sum(tp.svm[k,])+sum(fn.svm[k,]))
+    }
+  }
+  
+  sum(AM.svm[,1])/10
+
+#================================================================================================
