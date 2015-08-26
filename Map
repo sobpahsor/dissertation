@@ -1,0 +1,66 @@
+package sober.hadoop.c45;
+
+import java.io.IOException;
+import java.util.StringTokenizer;
+import org.apache.hadoop.io.IntWritable;
+import org.apache.hadoop.io.LongWritable;
+import org.apache.hadoop.io.Text;
+import org.apache.hadoop.mapred.MapReduceBase;
+//import org.apache.hadoop.mapred.Mapper;
+import org.apache.hadoop.mapred.OutputCollector;
+import org.apache.hadoop.mapred.Reporter;
+
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.FileUtil;
+import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.io.ArrayWritable;
+import org.apache.hadoop.io.DoubleWritable;
+import org.apache.hadoop.io.IntWritable;
+import org.apache.hadoop.io.Text;
+import org.apache.hadoop.mapreduce.Job;
+import org.apache.hadoop.mapreduce.Mapper;
+import org.apache.hadoop.mapreduce.Reducer;
+import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
+import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
+
+//public class Map extends MapReduceBase implements Mapper<LongWritable, Text, Text, IntWritable> {
+
+public class Map extends Mapper<LongWritable, Text, Text, IntWritable> {
+
+	private final static IntWritable one = new IntWritable(1);
+	private Text AttributeValue = new Text();//对应 attrValue
+	private int i;
+	private String word; // 对应token
+	public static int num_attr; // 对应no_Attr
+
+	public void map(LongWritable key, Text value,OutputCollector<Text, IntWritable> output,Reporter reporter) throws IOException {
+		
+		CurrentSplitNode  Split_Node = null;
+		int num_attr_splitted = 0;
+		Split_Node = MRC45.current_split;
+		
+		String line = value.toString();
+		StringTokenizer iter = new StringTokenizer(line);
+		int attr_index = 0;
+		String attr_value = null;
+		String class_lable = null;
+		
+		num_attr = iter.countTokens() - 1; //默认最后一个属性为class
+		String attribute[] = new String[num_attr];
+		
+		boolean stop = true;
+		
+		for(i = 0; i < num_attr; i++){
+			attribute[i] = iter.nextToken();
+		}
+		
+		class_lable = iter.nextToken();
+		num_attr_splitted = Split_Node.splitted_attr_index.size;
+		
+		
+		
+		
+		
+	}
+}
